@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMS / HVAC :: ORBITAL-07</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+    :root {
+      --bg0: #17080c;
+      --bg1: #2a0e15;
+      --grid: rgba(236, 205, 189, 0.11);
+      --line: #714651;
+      --soft: #ad8f84;
+      --ink: #f3e7da;
+      --accent: #e24386;
+      --off: #40232b;
+      --mid: #7d6367;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #e6e6e6;
+      padding: 16px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--ink);
+    }
+
+    .phone {
+      width: min(410px, 96vw);
+      aspect-ratio: 410 / 880;
+      border-radius: 46px;
+      background: #0b0b0d;
+      box-shadow: 0 0 0 2px #3f4044, 0 0 0 7px #0a0a0c, 0 18px 64px rgba(0, 0, 0, 0.45);
+      padding: 12px;
+    }
+
+    .screen {
+      position: relative;
+      height: 100%;
+      border-radius: 36px;
+      overflow: hidden;
+      border: 1px solid #594049;
+      background:
+        linear-gradient(180deg, rgba(190, 40, 92, 0.12), transparent 16%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+    }
+
+    .screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 4px, rgba(0, 0, 0, 0.24) 4px 5px);
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+
+    .island {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 118px;
+      height: 28px;
+      border-radius: 30px;
+      background: #050507;
+      z-index: 5;
+    }
+
+    .ui {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      padding: 50px 16px 14px;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr;
+      gap: 8px;
+    }
+
+    .ticker {
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      color: #cfb6ab;
+      white-space: nowrap;
+      overflow: hidden;
+      text-transform: uppercase;
+    }
+
+    .title {
+      border-bottom: 1px solid #90606d;
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'VT323', monospace;
+      font-size: 48px;
+      letter-spacing: 0.06em;
+      line-height: 0.82;
+      text-transform: uppercase;
+    }
+
+    .title .accent {
+      color: var(--accent);
+    }
+
+    .panels {
+      display: grid;
+      grid-template-rows: repeat(3, 1fr) auto;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .panel {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 6px 0;
+      display: grid;
+      grid-template-columns: 118px 1fr 14px;
+      gap: 10px;
+    }
+
+    .glyph {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      gap: 2px;
+      height: 96px;
+      align-self: center;
+    }
+
+    .px {
+      background: transparent;
+      border: 1px solid transparent;
+      transition: 0.2s linear;
+    }
+
+    .px.on {
+      background: var(--ink);
+      border-color: #beac9f;
+    }
+
+    .px.mid {
+      background: var(--mid);
+      border-color: #6d575a;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .dots-line {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: #d1b8ac;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .log {
+      font-size: 10px;
+      line-height: 1.15;
+      color: #d1b9ae;
+      text-transform: uppercase;
+      min-height: 74px;
+      white-space: pre;
+    }
+
+    .bars {
+      display: grid;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 70px 1fr 42px;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #dbc4b7;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .track {
+      height: 11px;
+      border: 1px solid #67424c;
+      background: rgba(35, 14, 20, 0.7);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .track::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 7px, transparent 7px 10px);
+    }
+
+    .fill {
+      height: 100%;
+      width: var(--w, 50%);
+      background: #ebe0d3;
+      transition: width 0.22s linear;
+    }
+
+    .spark {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 1px;
+      height: 14px;
+      align-items: end;
+      margin-top: 2px;
+    }
+
+    .spark i {
+      display: block;
+      width: 100%;
+      background: #e8ddcf;
+      height: 20%;
+      transition: height 0.2s linear;
+    }
+
+    .heat {
+      display: grid;
+      grid-template-columns: repeat(14, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+      gap: 1px;
+      height: 86px;
+      margin-top: 2px;
+    }
+
+    .checks {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      padding-top: 4px;
+    }
+
+    .check {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #aa838f;
+      transition: 0.18s linear;
+    }
+
+    .check.on {
+      background: #f0e5d7;
+      box-shadow: 0 0 8px rgba(240, 229, 215, 0.4);
+    }
+
+    .panel-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2px;
+      font-size: 12px;
+      color: #cfb6ab;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .level {
+      font-family: 'VT323', monospace;
+      font-size: 42px;
+      color: #f0e3d5;
+      letter-spacing: 0.08em;
+      line-height: 0.86;
+    }
+
+    .bottom {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 10px;
+      min-height: 130px;
+    }
+
+    .left-matrix {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      align-items: end;
+      gap: 4px;
+      padding-right: 4px;
+    }
+
+    .column {
+      display: grid;
+      grid-template-rows: repeat(10, 1fr);
+      gap: 1px;
+      height: 100%;
+    }
+
+    .digit {
+      font-size: 14px;
+      text-align: center;
+      color: #ddc6b8;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .barcode {
+      border-left: 1px solid #724a55;
+      padding-left: 8px;
+      display: grid;
+      grid-template-columns: repeat(30, 1fr);
+      gap: 1px;
+      align-items: end;
+    }
+
+    .code {
+      width: 100%;
+      background: #f0e6da;
+      height: 30%;
+      transition: height 0.19s linear, opacity 0.19s linear;
+    }
+
+    @media (max-width: 440px) {
+      body { padding: 8px; }
+      .title { font-size: 42px; }
+      .level { font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <section class="screen">
+      <div class="island"></div>
+
+      <div class="ui">
+        <div class="ticker" id="ticker">DMP 2% * SP 308PS * PUFIL 82% * SYS READY</div>
+
+        <header class="title">
+          <span>BMS / HVAC ::</span>
+          <span class="accent">ORBITAL-07</span>
+        </header>
+
+        <div class="panels" id="panels"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const panelDefs = [
+      { level: '04', idA: '6359015', idB: '33156091' },
+      { level: '07', idA: '34915171', idB: '55062911' },
+      { level: '03', idA: '17083418', idB: '82549269' }
+    ];
+
+    const glyphPattern = [
+      [0, 1], [1, 1], [2, 1], [3, 1],
+      [3, 2], [3, 3], [3, 4],
+      [4, 4], [5, 4], [6, 4], [7, 4], [8, 4],
+      [8, 5], [8, 6], [8, 7], [8, 8], [8, 9],
+      [7, 6], [6, 6], [5, 6], [4, 7],
+      [1, 3], [1, 4], [1, 5], [2, 5], [2, 6]
+    ];
+    const glyphPath = [
+      [0, 1], [1, 1], [2, 1], [3, 1],
+      [3, 2], [3, 3], [3, 4],
+      [4, 4], [5, 4], [6, 4], [7, 4], [8, 4],
+      [8, 5], [8, 6], [8, 7], [8, 8], [8, 9],
+      [8, 8], [8, 7], [7, 6], [6, 6], [5, 6], [4, 7],
+      [3, 6], [2, 6], [2, 5], [1, 5], [1, 4], [1, 3],
+      [2, 3], [3, 4], [4, 4]
+    ];
+
+    const logPool = [
+      'SENSOR CHECK 0X22ED [OK]',
+      'STATE: RUNNING CYCLE: 68MS',
+      'DUCT PRESSURE: 209PA',
+      'POWER LOOP: [##########..] 61%',
+      'NOTE: SYSTEM WITHIN LIMITS',
+      'FAN SPEED: 998 RPM STABLE',
+      'AIR QUALITY CO2: 806PPM',
+      'STATE: STARTUP CYCLE: 127MS',
+      'SENSOR CHECK 0X0C0A [OK]',
+      'STATE: IDLE CYCLE: 66MS'
+    ];
+
+    const statDefs = [
+      { key: 'SUPPLY', v: 63, unit: '%' },
+      { key: 'TEMP', v: 20, unit: 'C' },
+      { key: 'FILTER', v: 72, unit: '%' },
+      { key: 'EXHAUST', v: 48, unit: '%' },
+      { key: 'AIRFLOW', v: 66, unit: '%' }
+    ];
+
+    const panels = document.getElementById('panels');
+
+    function makePx(type) {
+      const el = document.createElement('span');
+      el.className = 'px';
+      if (type === 'on') el.classList.add('on');
+      if (type === 'mid') el.classList.add('mid');
+      return el;
+    }
+
+    function setPxState(cell, state) {
+      cell.classList.remove('on', 'mid');
+      if (state === 'on') cell.classList.add('on');
+      if (state === 'mid') cell.classList.add('mid');
+    }
+
+    function renderGlyphMotion(glyph) {
+      glyph.supportCells.forEach((cell) => {
+        setPxState(cell, Math.random() > 0.92 ? 'on' : 'mid');
+      });
+
+      const total = glyph.pathCells.length;
+      glyph.pathCells.forEach((cell, idx) => {
+        const d1 = (idx - glyph.phase + total) % total;
+        const d2 = (idx - ((glyph.phase + Math.floor(total / 2)) % total) + total) % total;
+
+        let state = 'off';
+        if (d1 < 2 || d2 < 2) state = 'on';
+        else if (d1 < 6 || d2 < 6) state = 'mid';
+
+        setPxState(cell, state);
+      });
+    }
+
+    function makeGlyph() {
+      const root = document.createElement('div');
+      root.className = 'glyph';
+
+      const active = new Set(glyphPattern.map(([x, y]) => `${x}:${y}`));
+      const byKey = new Map();
+
+      for (let y = 0; y < 10; y += 1) {
+        for (let x = 0; x < 12; x += 1) {
+          const key = `${x}:${y}`;
+          const cell = makePx(active.has(key) ? 'mid' : 'off');
+          root.append(cell);
+          byKey.set(key, cell);
+        }
+      }
+
+      const pathKeys = new Set(glyphPath.map(([x, y]) => `${x}:${y}`));
+      const pathCells = glyphPath.map(([x, y]) => byKey.get(`${x}:${y}`)).filter(Boolean);
+      const supportCells = [...active]
+        .filter((key) => !pathKeys.has(key))
+        .map((key) => byKey.get(key))
+        .filter(Boolean);
+
+      const glyph = {
+        root,
+        pathCells,
+        supportCells,
+        phase: Math.floor(Math.random() * pathCells.length),
+        dir: Math.random() > 0.5 ? 1 : -1
+      };
+      renderGlyphMotion(glyph);
+      return glyph;
+    }
+
+    function randomHexBlock(lines) {
+      const hex = '0123456789ABCDEF';
+      const rows = [];
+      for (let i = 0; i < lines; i += 1) {
+        let row = '';
+        for (let j = 0; j < 20; j += 1) {
+          row += hex[Math.floor(Math.random() * hex.length)];
+          if (j % 2 === 1 && j < 19) row += ' ';
+        }
+        rows.push(row);
+      }
+      return rows.join('\n');
+    }
+
+    function makeChecks() {
+      const root = document.createElement('div');
+      root.className = 'checks';
+      const list = [];
+      for (let i = 0; i < 5; i += 1) {
+        const c = document.createElement('div');
+        c.className = `check ${Math.random() > 0.5 ? 'on' : ''}`.trim();
+        root.append(c);
+        list.push(c);
+      }
+      return { root, list };
+    }
+
+    function makePanelOne(foot) {
+      const wrap = document.createElement('section');
+      wrap.className = 'panel';
+
+      const glyph = makeGlyph();
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const dots = document.createElement('div');
+      dots.className = 'dots-line';
+      dots.textContent = '. . . . . . . . . . . . . . .';
+
+      const log = document.createElement('div');
+      log.className = 'log';
+      log.textContent = logPool.slice(0, 8).join('\n');
+
+      const footline = document.createElement('div');
+      footline.className = 'panel-foot';
+      footline.innerHTML = `<span>${foot.idA} | ${foot.idB}</span><span class="level">LEVEL ${foot.level}</span>`;
+
+      meta.append(dots, log, footline);
+
+      const checks = makeChecks();
+
+      wrap.append(glyph.root, meta, checks.root);
+
+      return { wrap, glyph, checks: checks.list, log, dots };
+    }
+
+    function makePanelTwo(foot) {
+      const wrap = document.createElement('section');
+      wrap.className = 'panel';
+
+      const glyph = makeGlyph();
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const bars = document.createElement('div');
+      bars.className = 'bars';
+      const fills = [];
+      const values = [];
+
+      statDefs.forEach((s) => {
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+
+        const label = document.createElement('span');
+        label.textContent = `${s.key}:`;
+
+        const track = document.createElement('span');
+        track.className = 'track';
+
+        const fill = document.createElement('span');
+        fill.className = 'fill';
+        fill.style.setProperty('--w', `${s.v}%`);
+        track.append(fill);
+
+        const val = document.createElement('span');
+        val.textContent = `${s.v}${s.unit}`;
+
+        row.append(label, track, val);
+        bars.append(row);
+        fills.push({ el: fill, unit: s.unit, min: s.key === 'TEMP' ? 17 : 30, max: s.key === 'TEMP' ? 27 : 90 });
+        values.push(val);
+      });
+
+      const spark = document.createElement('div');
+      spark.className = 'spark';
+      const sparkBars = [];
+      for (let i = 0; i < 20; i += 1) {
+        const b = document.createElement('i');
+        b.style.height = `${22 + Math.random() * 68}%`;
+        spark.append(b);
+        sparkBars.push(b);
+      }
+
+      const footline = document.createElement('div');
+      footline.className = 'panel-foot';
+      footline.innerHTML = `<span>. . .</span><span class="level">LEVEL ${foot.level}</span>`;
+
+      meta.append(bars, spark, footline);
+
+      const checks = makeChecks();
+      wrap.append(glyph.root, meta, checks.root);
+
+      return { wrap, glyph, checks: checks.list, fills, values, sparkBars };
+    }
+
+    function makePanelThree(foot) {
+      const wrap = document.createElement('section');
+      wrap.className = 'panel';
+
+      const glyph = makeGlyph();
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const heat = document.createElement('div');
+      heat.className = 'heat';
+      const heatCells = [];
+
+      for (let i = 0; i < 84; i += 1) {
+        const r = Math.random();
+        const kind = r > 0.82 ? 'on' : (r > 0.63 ? 'mid' : 'off');
+        const p = makePx(kind);
+        heat.append(p);
+        heatCells.push(p);
+      }
+
+      const footline = document.createElement('div');
+      footline.className = 'panel-foot';
+      footline.innerHTML = `<span>. . .</span><span class="level">LEVEL ${foot.level}</span>`;
+
+      meta.append(heat, footline);
+
+      const checks = makeChecks();
+      wrap.append(glyph.root, meta, checks.root);
+
+      return { wrap, glyph, checks: checks.list, heatCells };
+    }
+
+    const panelOne = makePanelOne(panelDefs[0]);
+    const panelTwo = makePanelTwo(panelDefs[1]);
+    const panelThree = makePanelThree(panelDefs[2]);
+
+    panels.append(panelOne.wrap, panelTwo.wrap, panelThree.wrap);
+
+    const bottom = document.createElement('section');
+    bottom.className = 'bottom';
+
+    const leftMatrix = document.createElement('div');
+    leftMatrix.className = 'left-matrix';
+    const columns = [];
+
+    for (let c = 0; c < 6; c += 1) {
+      const colWrap = document.createElement('div');
+
+      const digit = document.createElement('div');
+      digit.className = 'digit';
+      digit.textContent = c < 3 ? '0' : (Math.random() > 0.7 ? '1' : '.');
+
+      const col = document.createElement('div');
+      col.className = 'column';
+      const cells = [];
+
+      for (let r = 0; r < 10; r += 1) {
+        const p = makePx(Math.random() > 0.8 ? 'on' : (Math.random() > 0.6 ? 'mid' : 'off'));
+        col.append(p);
+        cells.push(p);
+      }
+
+      colWrap.append(digit, col);
+      leftMatrix.append(colWrap);
+      columns.push({ digit, cells });
+    }
+
+    const barcode = document.createElement('div');
+    barcode.className = 'barcode';
+    const codeBars = [];
+
+    for (let i = 0; i < 30; i += 1) {
+      const b = document.createElement('div');
+      b.className = 'code';
+      b.style.height = `${20 + Math.random() * 76}%`;
+      barcode.append(b);
+      codeBars.push(b);
+    }
+
+    bottom.append(leftMatrix, barcode);
+    panels.append(bottom);
+
+    const ticker = document.getElementById('ticker');
+    const tickerLines = [
+      'DMP 2% * SP 308PS * PUFIL 82% * SYS READY',
+      'UFD 327 * CELLS 1.02M * NOMINAL * LINKED',
+      'MONITOR * SUP 19.1C * RET 23.2C * OK',
+      'PM2.5 19UG/M3 * FLOW 825M3/H * ONLINE'
+    ];
+
+    let tickI = 0;
+    setInterval(() => {
+      tickI = (tickI + 1) % tickerLines.length;
+      ticker.textContent = tickerLines[tickI];
+    }, 1300);
+
+    function animateGlyph(glyph) {
+      const total = glyph.pathCells.length;
+      glyph.phase = (glyph.phase + glyph.dir + total) % total;
+      if (Math.random() > 0.985) glyph.dir *= -1;
+      renderGlyphMotion(glyph);
+    }
+
+    function animateChecks(list) {
+      list.forEach((c) => {
+        if (Math.random() > 0.67) c.classList.toggle('on');
+      });
+    }
+
+    setInterval(() => {
+      animateGlyph(panelOne.glyph);
+      animateGlyph(panelTwo.glyph);
+      animateGlyph(panelThree.glyph);
+
+      animateChecks(panelOne.checks);
+      animateChecks(panelTwo.checks);
+      animateChecks(panelThree.checks);
+    }, 260);
+
+    setInterval(() => {
+      const shuffled = [...logPool].sort(() => Math.random() - 0.5).slice(0, 8);
+      panelOne.log.textContent = shuffled.join('\n');
+      panelOne.dots.textContent = randomHexBlock(1).replace(/ /g, '.').slice(0, 35);
+    }, 920);
+
+    setInterval(() => {
+      panelTwo.fills.forEach((f, i) => {
+        const prevText = panelTwo.values[i].textContent;
+        const prev = parseInt(prevText, 10) || 50;
+        const delta = Math.floor((Math.random() - 0.5) * 10);
+        const next = Math.max(f.min, Math.min(f.max, prev + delta));
+        const width = f.unit === 'C' ? ((next - f.min) / (f.max - f.min)) * 100 : next;
+        f.el.style.setProperty('--w', `${Math.max(8, Math.min(94, width))}%`);
+        panelTwo.values[i].textContent = `${next}${f.unit}`;
+      });
+
+      panelTwo.sparkBars.forEach((b) => {
+        b.style.height = `${12 + Math.random() * 82}%`;
+      });
+    }, 340);
+
+    setInterval(() => {
+      panelThree.heatCells.forEach((p) => {
+        if (Math.random() > 0.87) {
+          p.classList.toggle('on');
+          p.classList.toggle('mid');
+        }
+      });
+    }, 300);
+
+    setInterval(() => {
+      columns.forEach((col, idx) => {
+        col.digit.textContent = Math.random() > 0.63 ? String(Math.floor(Math.random() * 2)) : '.';
+        col.cells.forEach((p) => {
+          if (Math.random() > 0.77) {
+            p.classList.toggle('on');
+            p.classList.toggle('mid');
+          }
+        });
+
+        if (idx < 2 && Math.random() > 0.52) col.digit.textContent = '0';
+      });
+
+      codeBars.forEach((b) => {
+        const on = Math.random() > 0.15;
+        b.style.opacity = on ? '1' : '0.14';
+        b.style.height = `${10 + Math.random() * 88}%`;
+      });
+    }, 230);
+  </script>
+</body>
+</html>
